@@ -6,6 +6,7 @@ Statistical Methods + LSTM Ensemble for Voice Phishing Detection
 import numpy as np
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, roc_auc_score
 import matplotlib.pyplot as plt
+from config.model import ENSEMBLE_STAT_WEIGHT, ENSEMBLE_LSTM_WEIGHT, THRESHOLD
 
 
 class EnsembleVoicePhishingDetector:
@@ -18,7 +19,7 @@ class EnsembleVoicePhishingDetector:
     - Final Score: weighted_statistical * statistical_score + weighted_lstm * lstm_score
     """
     
-    def __init__(self, statistical_weight=0.4, lstm_weight=0.6, verbose=True):
+    def __init__(self, statistical_weight=ENSEMBLE_STAT_WEIGHT, lstm_weight=ENSEMBLE_LSTM_WEIGHT, verbose=True):
         """
         초기화
         
@@ -64,7 +65,7 @@ class EnsembleVoicePhishingDetector:
         
         return normalized
     
-    def ensemble_predict(self, statistical_scores, lstm_pred_probs, threshold=0.5):
+    def ensemble_predict(self, statistical_scores, lstm_pred_probs, threshold=THRESHOLD):
         """
         앙상블 예측
         
@@ -96,7 +97,7 @@ class EnsembleVoicePhishingDetector:
         
         return ensemble_scores, predictions
     
-    def evaluate_ensemble(self, statistical_scores, lstm_pred_probs, y_true, threshold=0.5):
+    def evaluate_ensemble(self, statistical_scores, lstm_pred_probs, y_true, threshold=THRESHOLD):
         """
         앙상블 모델 평가
         
@@ -205,7 +206,7 @@ class EnsembleVoicePhishingDetector:
         # 3. 앙상블 방법
         _, ensemble_pred = self.ensemble_predict(statistical_scores, lstm_pred_probs)
         
-        print("\n[3] 앙상블 방법 (Statistical=0.4, LSTM=0.6)")
+        print(f"\n[3] 앙상블 방법 (Statistical={self.statistical_weight}, LSTM={self.lstm_weight})")
         print(f"Accuracy:  {accuracy_score(y_true_flat, ensemble_pred):.4f}")
         print(f"Recall:    {recall_score(y_true_flat, ensemble_pred):.4f}")
         print(f"Precision: {precision_score(y_true_flat, ensemble_pred):.4f}")

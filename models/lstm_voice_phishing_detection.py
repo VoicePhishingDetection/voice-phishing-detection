@@ -13,6 +13,14 @@ import matplotlib.pyplot as plt
 import pickle
 import warnings
 warnings.filterwarnings('ignore')
+from config.model import (
+    EMBEDDING_DIM, MAX_SEQUENCE_LENGTH,
+    LSTM_UNITS_1, LSTM_UNITS_2, LSTM_DROPOUT,
+    DENSE_UNITS, DENSE_DROPOUT,
+    ATTENTION_NUM_HEADS, ATTENTION_KEY_DIM,
+    LEARNING_RATE, BATCH_SIZE, EPOCHS, THRESHOLD,
+    EARLY_STOPPING_PATIENCE, REDUCE_LR_FACTOR, REDUCE_LR_PATIENCE, MIN_LR
+)
 
 
 class VoicePhishingLSTMDetector:
@@ -26,7 +34,7 @@ class VoicePhishingLSTMDetector:
     - Attention 메커니즘 (선택사항)
     """
     
-    def __init__(self, embedding_dim=300, max_sequence_length=200, verbose=True):
+    def __init__(self, embedding_dim=EMBEDDING_DIM, max_sequence_length=MAX_SEQUENCE_LENGTH, verbose=True):
         """
         초기화
         
@@ -110,16 +118,16 @@ class VoicePhishingLSTMDetector:
     def _build_lstm_model(self):
         """기본 LSTM 모델"""
         model = Sequential([
-            layers.LSTM(64, input_shape=(self.max_sequence_length, self.embedding_dim),
-                       return_sequences=True, dropout=0.2),
-            layers.LSTM(32, return_sequences=False, dropout=0.2),
-            layers.Dense(16, activation='relu'),
-            layers.Dropout(0.3),
+            layers.LSTM(LSTM_UNITS_1, input_shape=(self.max_sequence_length, self.embedding_dim),
+                       return_sequences=True, dropout=LSTM_DROPOUT),
+            layers.LSTM(LSTM_UNITS_2, return_sequences=False, dropout=LSTM_DROPOUT),
+            layers.Dense(DENSE_UNITS, activation='relu'),
+            layers.Dropout(DENSE_DROPOUT),
             layers.Dense(1, activation='sigmoid')
         ])
         
         model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=0.001),
+            optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
             loss='binary_crossentropy',
             metrics=['accuracy', keras.metrics.Recall(), keras.metrics.Precision()]
         )
@@ -129,19 +137,19 @@ class VoicePhishingLSTMDetector:
         """양방향 LSTM 모델"""
         model = Sequential([
             layers.Bidirectional(
-                layers.LSTM(64, input_shape=(self.max_sequence_length, self.embedding_dim),
-                           return_sequences=True, dropout=0.2)
+                layers.LSTM(LSTM_UNITS_1, input_shape=(self.max_sequence_length, self.embedding_dim),
+                           return_sequences=True, dropout=LSTM_DROPOUT)
             ),
             layers.Bidirectional(
-                layers.LSTM(32, return_sequences=False, dropout=0.2)
+                layers.LSTM(LSTM_UNITS_2, return_sequences=False, dropout=LSTM_DROPOUT)
             ),
-            layers.Dense(16, activation='relu'),
-            layers.Dropout(0.3),
+            layers.Dense(DENSE_UNITS, activation='relu'),
+            layers.Dropout(DENSE_DROPOUT),
             layers.Dense(1, activation='sigmoid')
         ])
         
         model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=0.001),
+            optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
             loss='binary_crossentropy',
             metrics=['accuracy', keras.metrics.Recall(), keras.metrics.Precision()]
         )
@@ -153,33 +161,33 @@ class VoicePhishingLSTMDetector:
         
         # 양방향 LSTM
         lstm = layers.Bidirectional(
-            layers.LSTM(64, return_sequences=True, dropout=0.2)
+            layers.LSTM(LSTM_UNITS_1, return_sequences=True, dropout=LSTM_DROPOUT)
         )(inputs)
         
         # Attention 메커니즘
-        attention = layers.MultiHeadAttention(num_heads=4, key_dim=32)(lstm, lstm)
+        attention = layers.MultiHeadAttention(num_heads=ATTENTION_NUM_HEADS, key_dim=ATTENTION_KEY_DIM)(lstm, lstm)
         attention = layers.Add()([attention, lstm])  # Residual connection
         attention = layers.LayerNormalization()(attention)
         
         # 두 번째 LSTM
         lstm2 = layers.Bidirectional(
-            layers.LSTM(32, return_sequences=False, dropout=0.2)
+            layers.LSTM(LSTM_UNITS_2, return_sequences=False, dropout=LSTM_DROPOUT)
         )(attention)
         
         # Dense 레이어
-        dense = layers.Dense(16, activation='relu')(lstm2)
-        dense = layers.Dropout(0.3)(dense)
+        dense = layers.Dense(DENSE_UNITS, activation='relu')(lstm2)
+        dense = layers.Dropout(DENSE_DROPOUT)(dense)
         outputs = layers.Dense(1, activation='sigmoid')(dense)
         
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=0.001),
+            optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
             loss='binary_crossentropy',
             metrics=['accuracy', keras.metrics.Recall(), keras.metrics.Precision()]
         )
         return model
     
-    def train(self, X_train, y_train, X_val, y_val, epochs=50, batch_size=32):
+    def train(self, X_train, y_train, X_val, y_val, epochs=EPOCHS, batch_size=BATCH_SIZE):
         """
         모델 훈련
         
@@ -192,8 +200,8 @@ class VoicePhishingLSTMDetector:
             batch_size: 배치 크기
         """
         callbacks = [
-            EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
-            ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=0.00001, verbose=1)
+            EarlyStopping(monitor='val_loss', patience=EARLY_STOPPING_PATIENCE, restore_best_weights=True),
+            ReduceLROnPlateau(monitor='val_loss', factor=REDUCE_LR_FACTOR, patience=REDUCE_LR_PATIENCE, min_lr=MIN_LR, verbose=1)
         ]
         
         self.history = self.model.fit(
@@ -221,7 +229,7 @@ class VoicePhishingLSTMDetector:
         """
         # 예측
         y_pred_prob = self.model.predict(X_test, verbose=0)
-        y_pred = (y_pred_prob > 0.5).astype(int).flatten()
+        y_pred = (y_pred_prob > THRESHOLD).astype(int).flatten()
         y_test_flat = y_test.flatten() if isinstance(y_test, np.ndarray) else np.array(y_test)
         
         # 메트릭 계산
@@ -297,8 +305,8 @@ def main():
     
     # 1. 모델 초기화
     detector = VoicePhishingLSTMDetector(
-        embedding_dim=300,
-        max_sequence_length=200,
+        embedding_dim=EMBEDDING_DIM,
+        max_sequence_length=MAX_SEQUENCE_LENGTH,
         verbose=True
     )
     

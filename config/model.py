@@ -1,0 +1,48 @@
+"""
+Centralized model hyperparameters for voice-phishing-detection.
+
+Place all tunable hyperparameters here so other modules can import them.
+"""
+
+# Embedding / input
+EMBEDDING_DIM = 300
+MAX_SEQUENCE_LENGTH = 200
+
+# LSTM architecture
+LSTM_UNITS_1 = 64
+LSTM_UNITS_2 = 32
+LSTM_DROPOUT = 0.2
+
+# Dense layers
+DENSE_UNITS = 16
+DENSE_DROPOUT = 0.3
+
+# Attention
+ATTENTION_NUM_HEADS = 4
+ATTENTION_KEY_DIM = 32
+
+# Optimization / training
+LEARNING_RATE = 0.001
+BATCH_SIZE = 32
+EPOCHS = 50
+
+# Callbacks
+EARLY_STOPPING_PATIENCE = 5
+REDUCE_LR_FACTOR = 0.5
+REDUCE_LR_PATIENCE = 3
+MIN_LR = 1e-5
+
+# Ensemble / thresholds
+THRESHOLD = 0.5
+ENSEMBLE_STAT_WEIGHT = 0.4
+ENSEMBLE_LSTM_WEIGHT = 0.6
+
+__all__ = [
+	'EMBEDDING_DIM', 'MAX_SEQUENCE_LENGTH',
+	'LSTM_UNITS_1', 'LSTM_UNITS_2', 'LSTM_DROPOUT',
+	'DENSE_UNITS', 'DENSE_DROPOUT',
+	'ATTENTION_NUM_HEADS', 'ATTENTION_KEY_DIM',
+	'LEARNING_RATE', 'BATCH_SIZE', 'EPOCHS',
+	'EARLY_STOPPING_PATIENCE', 'REDUCE_LR_FACTOR', 'REDUCE_LR_PATIENCE', 'MIN_LR',
+	'THRESHOLD', 'ENSEMBLE_STAT_WEIGHT', 'ENSEMBLE_LSTM_WEIGHT'
+]
