@@ -34,6 +34,26 @@ class SpamClassifier:
         self.tokenizer = None
         self.model = None
 
+    @staticmethod
+    def load_assets(base_name='spam_detector'):
+        """저장된 모델과 토크나이저를 불러옵니다."""
+        model_path = f'{base_name}_lstm.keras'
+        tokenizer_path = f'{base_name}_tokenizer.pkl'
+        
+        if os.path.exists(model_path) and os.path.exists(tokenizer_path):
+            try:
+                model = load_model(model_path)
+                with open(tokenizer_path, 'rb') as f:
+                    tokenizer = pickle.load(f)
+                print(f"✓ 모델 로드: {model_path}")
+                print(f"✓ 토크나이저 로드: {tokenizer_path}")
+                return model, tokenizer
+            except Exception as e:
+                print(f"⚠️ 저장된 모델 로드 실패: {e}")
+                return None, None
+        else:
+            return None, None
+
     def build_model(self):
         """LSTM 모델 구조를 구축합니다."""
         self.model = Sequential([
@@ -151,7 +171,51 @@ def main():
     DATASET_FILE = 'spam.csv'
     RANDOM_STATE = 42
 
-    # 1. 데이터 로드 및 정리
+    # 모델 초기화
+    classifier = SpamClassifier(threshold=0.6)
+    
+    # 저장된 모델 확인 및 로드
+    print("\n[0단계] 저장된 모델 확인...")
+    model, tokenizer = SpamClassifier.load_assets()
+    
+    if model is not None and tokenizer is not None:
+        # 저장된 모델이 있으면 로드하고 바로 예측으로 이동
+        print("\n✓ 저장된 모델을 사용합니다.")
+        classifier.model = model
+        classifier.tokenizer = tokenizer
+        
+        print("\n" + "=" * 60)
+        print("사용자 입력 실시간 예측 테스트")
+        print("  종료하려면 'exit' 또는 'quit'를 입력하세요.")
+        print("=" * 60)
+
+        while True:
+            try:
+                user_input = input("\n> 이메일 문장을 입력하세요: ")
+
+                if user_input.lower() in ['exit', 'quit']:
+                    break
+
+                if not user_input.strip():
+                    print("❗ 입력된 문장이 없습니다. 다시 입력해 주세요.")
+                    continue
+
+                label, confidence = classifier.predict_email(user_input)
+
+                print("-" * 30)
+                print(f"**이메일:** {user_input}")
+                print(f"**예측 결과:** {label}")
+                print(f"**신뢰도:** {confidence:.2%}")
+                print("-" * 30)
+
+            except Exception as e:
+                print(f"⚠️ 오류가 발생했습니다: {e}")
+                break
+        
+        return
+
+    # 저장된 모델이 없으면 새로 학습
+    print("\n⚠️ 저장된 모델이 없습니다. 새로 학습합니다.\n")
     print(f"\n[1단계] 데이터셋 로드 및 정리 ({DATASET_FILE})...")
     try:
         df = pd.read_csv(DATASET_FILE, encoding='latin-1', usecols=['v1', 'v2'])
